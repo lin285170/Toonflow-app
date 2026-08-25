@@ -291,6 +291,28 @@ docker run -d -p <本地端口>:10588 -v <本地数据路径>:/app/data toonflow
 # 例如 http://localhost:10588/web/index.html
 ```
 
+> 💡 **构建说明**
+>
+> - 镜像内置 `python3`、`make`、`g++` 编译工具链，`better-sqlite3` 等原生依赖会在构建时自动编译，无需额外配置。
+> - 建议挂载 `/app/data` 目录（`-v <本地数据路径>:/app/data`）以持久化数据库和生成的素材，否则容器重建后数据会丢失。
+
+### 国内网络环境（可选）
+
+国内访问 Docker Hub 可能超时导致拉取基础镜像失败，可为 Docker 配置镜像加速器：
+
+```json
+// Docker Desktop: Settings -> Docker Engine
+{
+  "registry-mirrors": [
+    "https://docker.1ms.run",
+    "https://docker.xuanyuan.me",
+    "https://docker.m.daocloud.io"
+  ]
+}
+```
+
+修改后重启 Docker Desktop 生效，镜像加速地址失效时请自行替换为可用服务。
+
 ### 服务端口说明
 
 | 端口    | 用途     | 部署映射      |

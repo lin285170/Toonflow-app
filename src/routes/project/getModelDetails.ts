@@ -12,9 +12,9 @@ export default router.post(
   }),
   async (req, res) => {
     const { key } = req.body;
-    const data = await u.db("o_agentDeploy").select("o_agentDeploy.*").where("o_agentDeploy.key", key).first();
+    const data = await u.db("o_agentDeploy").select("o_agentDeploy.*").where("o_agentDeploy.key", key).andWhere("o_agentDeploy.userId", (req as any).user.id).first();
     const [id, modelName] = data ? data.modelName.split(/:(.+)/) : [];
-    const models = await u.vendor.getModelList(id);
+    const models = await u.vendor.getModelList(id, (req as any).user.id);
     const model = models.find((m) => m.modelName === modelName);
     if (!model) return res.status(400).send(error("未找到模型"));
     res.status(200).send(success(model));

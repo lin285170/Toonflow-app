@@ -28,7 +28,7 @@ export default router.post(
         label: name,
         prompt,
       })
-      .where("id", id);
+      .where("id", id).andWhere("userId", (req as any).user.id);
     res.status(200).send(success("艺术风格编辑成功"));
   },
 );

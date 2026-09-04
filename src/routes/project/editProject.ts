@@ -25,7 +25,7 @@ export default router.post(
   async (req, res) => {
     const { id, name, intro, type, artStyle, videoRatio, directorManual, imageModel, videoModel, imageQuality, projectType, mode } = req.body;
 
-    await u.db("o_project").where("id", id).update({
+    await u.db("o_project").where("id", id).andWhere("userId", (req as any).user.id).update({
       name,
       intro,
       type,

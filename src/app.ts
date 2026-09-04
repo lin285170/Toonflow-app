@@ -169,6 +169,8 @@ export default async function startServe(randomPort: Boolean = false) {
     const token = rawToken.replace("Bearer ", "");
     // 白名单路径（登录接口，兼容任意 baseUrl 前缀）
     if (req.path === "/api/login/login" || req.path.endsWith("/login/login")) return next();
+    // 开放注册接口
+    if (req.path === "/api/user/register" || req.path.endsWith("/user/register")) return next();
 
     if (!token) return res.status(401).send({ message: "未提供token" });
     try {

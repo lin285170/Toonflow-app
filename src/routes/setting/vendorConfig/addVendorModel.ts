@@ -45,7 +45,7 @@ export default router.post(
   async (req, res) => {
     const { id, model } = req.body;
 
-    const models = await u.db("o_vendorConfig").where("id", id).first("models");
+    const models = await u.db("o_vendorConfig").where("id", id).andWhere("userId", (req as any).user.id).first("models");
     if (models?.models) {
       const existingModels = JSON.parse(models.models);
       existingModels.push(model);

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>账号管理 - ToonFlow</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #1f2329;
+    --text2: #646a73;
+    --primary: #0052d9;
+    --primary-hover: #0a5be0;
+    --danger: #e34d59;
+    --ok: #00a870;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d;
+      --card: #1f2329;
+      --border: #33383f;
+      --text: #e8e9ec;
+      --text2: #a9aeb8;
+      --primary: #3b82f6;
+      --primary-hover: #60a5fa;
+      --danger: #f56c6c;
+      --ok: #34d399;
+      --shadow: 0 2px 12px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px; background: var(--card); border-bottom: 1px solid var(--border);
+  }
+  .logo { font-size: 20px; font-weight: 700; color: var(--primary); letter-spacing: .5px; }
+  .logo span { color: var(--text2); font-weight: 400; font-size: 14px; margin-left: 8px; }
+  .header a { color: var(--primary); text-decoration: none; font-size: 14px; cursor: pointer; }
+  .container { max-width: 720px; margin: 32px auto; padding: 0 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 28px; margin-bottom: 24px;
+  }
+  .card h2 { font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+  .tab {
+    padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px;
+    background: var(--card); border: 1px solid var(--border); color: var(--text2);
+  }
+  .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+  .field input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; background: var(--card); color: var(--text); outline: none;
+  }
+  .field input:focus { border-color: var(--primary); }
+  .btn {
+    padding: 10px 22px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;
+    background: var(--primary); color: #fff; transition: opacity .15s;
+  }
+  .btn:hover { opacity: .88; }
+  .btn.block { width: 100%; }
+  .btn.ghost { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+  .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .btn.sm { padding: 5px 12px; font-size: 13px; }
+  .msg { font-size: 13px; margin-top: 12px; min-height: 18px; }
+  .msg.ok { color: var(--ok); }
+  .msg.err { color: var(--danger); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--text2); font-weight: 500; font-size: 13px; }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px;
+  }
+  .badge.admin { background: rgba(0,82,217,.12); color: var(--primary); }
+  .badge.user { background: rgba(0,168,112,.12); color: var(--ok); }
+  .ops { display: flex; gap: 8px; }
+  .empty { text-align: center; color: var(--text2); padding: 32px 0; font-size: 14px; }
+  .tip { font-size: 12px; color: var(--text2); margin-top: 8px; line-height: 1.6; }
+  .hide { display: none; }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+  .toolbar input { flex: 1; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">ToonFlow<span>账号管理</span></div>
+    <a href="/" onclick="backHome(event)">← 返回首页</a>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" data-tab="register" onclick="switchTab('register')">注册账号</div>
+      <div class="tab" data-tab="manage" onclick="switchTab('manage')">用户管理</div>
+    </div>
+
+    <!-- 注册 -->
+    <div class="card" id="panel-register">
+      <h2>📝 注册新账号</h2>
+      <div class="field">
+        <label>用户名（2-20 个字符）</label>
+        <input id="reg-username" placeholder="请输入用户名" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>密码（6-20 个字符）</label>
+        <input id="reg-password" type="password" placeholder="请输入密码" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>确认密码</label>
+        <input id="reg-password2" type="password" placeholder="请再次输入密码" autocomplete="new-password">
+      </div>
+      <button class="btn block" onclick="doRegister()">注 册</button>
+      <div class="msg" id="reg-msg"></div>
+      <div class="tip">注册成功后即可使用新账号登录。新账号拥有独立的项目、供应商配置和 Agent 配置，互不影响。</div>
+    </div>
+
+    <!-- 用户管理 -->
+    <div class="card hide" id="panel-manage">
+      <h2>👥 用户管理</h2>
+      <div class="toolbar">
+        <input id="mgr-username" placeholder="新用户名（2-20 字符）">
+        <input id="mgr-password" type="password" placeholder="初始密码（6-20 字符）">
+        <button class="btn sm" onclick="createUser()">新建用户</button>
+      </div>
+      <div id="mgr-table"></div>
+      <div class="msg" id="mgr-msg"></div>
+      <div class="tip">仅管理员可访问。删除用户会同时删除该用户的项目、供应商配置、Agent 配置等全部数据，不可恢复。</div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  function getBaseUrl() {
+    try {
+      var raw = localStorage.getItem("setting");
+      if (raw) {
+        var obj = JSON.parse(raw);
+        if (obj && obj.baseUrl) return obj.baseUrl;
+      }
+    } catch (e) {}
+    return "/api";
+  }
+  function getToken() { return localStorage.getItem("token") || ""; }
+  window.__baseUrl = getBaseUrl();
+  window.__token = getToken();
+
+  function api(url, data) {
+    var headers = { "Content-Type": "application/json" };
+    var tk = getToken();
+    if (tk) headers["Authorization"] = tk;
+    return fetch(window.__baseUrl + url, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(data || {})
+    }).then(function (r) { return r.json().catch(function () { return { code: 500, message: "响应解析失败" }; }); });
+  }
+  window.__api = api;
+})();
+
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach(function (t) {
+    t.classList.toggle("active", t.dataset.tab === name);
+  });
+  document.getElementById("panel-register").classList.toggle("hide", name !== "register");
+  document.getElementById("panel-manage").classList.toggle("hide", name !== "manage");
+  if (name === "manage") loadUsers();
+}
+
+function backHome(e) {
+  e.preventDefault();
+  var tk = localStorage.getItem("token");
+  window.location.href = tk ? "/project" : "/";
+}
+
+function setMsg(id, text, ok) {
+  var el = document.getElementById(id);
+  el.textContent = text || "";
+  el.className = "msg" + (ok ? " ok" : text ? " err" : "");
+}
+
+function doRegister() {
+  var u = document.getElementById("reg-username").value.trim();
+  var p = document.getElementById("reg-password").value;
+  var p2 = document.getElementById("reg-password2").value;
+  setMsg("reg-msg", "");
+  if (u.length < 2 || u.length > 20) return setMsg("reg-msg", "用户名长度为 2-20 个字符");
+  if (p.length < 6 || p.length > 20) return setMsg("reg-msg", "密码长度为 6-20 个字符");
+  if (p !== p2) return setMsg("reg-msg", "两次输入的密码不一致");
+  window.__api("/user/register", { username: u, password: p }).then(function (res) {
+    if (res.code === 200) {
+      setMsg("reg-msg", "注册成功！请使用新账号登录。", true);
+      document.getElementById("reg-username").value = "";
+      document.getElementById("reg-password").value = "";
+      document.getElementById("reg-password2").value = "";
+    } else {
+      setMsg("reg-msg", res.message || "注册失败");
+    }
+  }).catch(function () { setMsg("reg-msg", "网络错误，请检查服务是否正常"); });
+}
+
+function loadUsers() {
+  setMsg("mgr-msg", "");
+  var tb = document.getElementById("mgr-table");
+  tb.innerHTML = '<div class="empty">加载中...</div>';
+  window.__api("/user/list").then(function (res) {
+    if (res.code !== 200) {
+      tb.innerHTML = '<div class="empty">' + (res.message || "加载失败") + '</div>';
+      if (res.code === 401 || res.code === 403) {
+        setMsg("mgr-msg", "需要管理员权限。请用 admin 账号登录后访问。");
+      }
+      return;
+    }
+    var list = res.data || [];
+    if (!list.length) { tb.innerHTML = '<div class="empty">暂无用户</div>'; return; }
+    var me = localStorage.getItem("userId");
+    var rows = list.map(function (u) {
+      var roleBadge = u.role === "admin"
+        ? '<span class="badge admin">管理员</span>'
+        : '<span class="badge user">普通用户</span>';
+      var ops = '';
+      if (u.role !== "admin") {
+        ops += '<button class="btn danger sm" onclick="resetPwd(' + u.id + ')">重置密码</button>';
+        if (String(u.id) !== String(me)) {
+          ops += '<button class="btn danger sm" onclick="delUser(' + u.id + ',\'' + esc(u.name) + '\')">删除</button>';
+        }
+      }
+      return '<tr><td>' + esc(u.name) + '</td><td>' + roleBadge + '</td><td>' + fmtTime(u.createTime) + '</td><td><div class="ops">' + ops + '</div></td></tr>';
+    }).join("");
+    tb.innerHTML = '<table><thead><tr><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }).catch(function () { tb.innerHTML = '<div class="empty">网络错误</div>'; });
+}
+
+function createUser() {
+  var u = document.getElementById("mgr-username").value.trim();
+  var p = document.getElementById("mgr-password").value;
+  setMsg("mgr-msg", "");
+  if (u.length < 2 || u.length > 20) return setMsg("mgr-msg", "用户名长度为 2-20 个字符");
+  if (p.length < 6 || p.length > 20) return setMsg("mgr-msg", "密码长度为 6-20 个字符");
+  window.__api("/user/create", { username: u, password: p }).then(function (res) {
+    if (res.code === 200) {
+      setMsg("mgr-msg", "用户创建成功", true);
+      document.getElementById("mgr-username").value = "";
+      document.getElementById("mgr-password").value = "";
+      loadUsers();
+    } else {
+      setMsg("mgr-msg", res.message || "创建失败");
+    }
+  }).catch(function () { setMsg("mgr-msg", "网络错误"); });
+}
+
+function resetPwd(id) {
+  var np = prompt("请输入新的密码（6-20 个字符）：");
+  if (np === null) return;
+  if (np.length < 6 || np.length > 20) return alert("密码长度需为 6-20 个字符");
+  window.__api("/user/resetPassword", { id: id, password: np }).then(function (res) {
+    if (res.code === 200) { alert("密码已重置"); loadUsers(); }
+    else alert(res.message || "重置失败");
+  }).catch(function () { alert("网络错误"); });
+}
+
+function delUser(id, name) {
+  if (!confirm("确定删除用户「" + name + "」吗？该用户的项目、供应商配置、Agent 配置等数据将被一并删除，不可恢复！")) return;
+  window.__api("/user/delete", { id: id }).then(function (res) {
+    if (res.code === 200) { alert("用户已删除"); loadUsers(); }
+    else alert(res.message || "删除失败");
+  }).catch(function () { alert("网络错误"); });
+}
+
+function fmtTime(ts) {
+  if (!ts) return "-";
+  var d = new Date(ts);
+  if (isNaN(d.getTime())) return "-";
+  var p = function (n) { return n < 10 ? "0" + n : "" + n; };
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+// 根据 URL 参数决定初始 tab
+(function () {
+  var m = location.search.match(/mode=([a-z]+)/i);
+  if (m && m[1] === "manage") switchTab("manage");
+})();
+</script>
+</body>
+</html>

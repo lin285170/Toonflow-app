@@ -23,6 +23,7 @@ export default router.post(
       name,
       fileUrl: imagePath,
       label: name,
+      userId: (req as any).user.id,
       prompt,
     });
     res.status(200).send(success("艺术风格添加成功"));

@@ -17,11 +17,13 @@ export default async (knex: Knex, forceInit: boolean = false): Promise<void> => 
         table.integer("id").notNullable();
         table.text("name");
         table.text("password");
+        table.text("role").defaultTo("user"); // admin 管理员 / user 普通用户
+        table.integer("createTime");
         table.primary(["id"]);
         table.unique(["id"]);
       },
       initData: async (knex) => {
-        await knex("o_user").insert([{ id: 1, name: "admin", password: "admin123" }]);
+        await knex("o_user").insert([{ id: 1, name: "admin", password: "admin123", role: "admin", createTime: Date.now() }]);
       },
     },
     //项目表

@@ -31,6 +31,23 @@ export default async (knex: Knex): Promise<void> => {
       });
     }
   };
+
+  // ===== 多用户功能迁移 =====
+  // 用户表扩展：role（admin/user）、createTime
+  await addColumn("o_user", "role", "string");
+  await addColumn("o_user", "createTime", "integer");
+  // 已有 admin 用户补全 role=admin
+  const adminUser = await db("o_user").where("name", "admin").first();
+  if (adminUser && !adminUser.role) {
+    await db("o_user").where("name", "admin").update({ role: "admin", createTime: Date.now() });
+  }
+  // 业务表加 userId 列，已有数据归 admin(userId=1)
+  for (const table of ["o_vendorConfig", "o_agentDeploy", "o_artStyle", "o_prompt", "o_tasks"]) {
+    await addColumn(table, "userId", "integer");
+    await db(table).whereNull("userId").update({ userId: 1 });
+  }
+  // ===== 多用户功能迁移结束 =====
+
   //矫正因软件异常退出导致的状态不一致问题
   await db("o_novel").where("eventState", 0).update({
     eventState: -1,

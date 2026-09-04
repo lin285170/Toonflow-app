@@ -33,7 +33,7 @@ export default router.post(
       artStyle,
       videoRatio,
       directorManual,
-      userId: 1,
+      userId: (req as any).user.id,
       imageModel,
       videoModel,
       createTime: Date.now(),

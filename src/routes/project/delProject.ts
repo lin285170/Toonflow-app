@@ -14,7 +14,7 @@ export default router.post(
   async (req, res) => {
     const { id } = req.body;
     //删除项目
-    await u.db("o_project").where("id", id).delete();
+    await u.db("o_project").where("id", id).andWhere("userId", (req as any).user.id).delete();
     await u.db("o_agentWorkData").where("projectId", id).delete();
     //删除项目下的原文
     await u.db("o_novel").where("projectId", id).delete();

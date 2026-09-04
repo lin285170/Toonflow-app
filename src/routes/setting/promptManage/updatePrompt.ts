@@ -12,7 +12,7 @@ export default router.post(
   }),
   async (req, res) => {
     const { id, data } = req.body;
-    await u.db("o_prompt").where("id", id).update({
+    await u.db("o_prompt").where("id", id).andWhere("userId", (req as any).user.id).update({
       useData: data,
     });
     res.status(200).send(success(123));

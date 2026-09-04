@@ -19,7 +19,7 @@ export default router.post(
     const { modelName, imageBase64, id, prompt } = req.body;
 
     try {
-      const vendorConfigData = await u.db("o_vendorConfig").where("id", id).first();
+      const vendorConfigData = await u.db("o_vendorConfig").where("id", id).andWhere("userId", (req as any).user.id).first();
 
       if (!vendorConfigData) return res.status(500).send(error("未找到该供应商配置"));
       if (!vendorConfigData.models) return res.status(500).send(error("未找到模型列表"));

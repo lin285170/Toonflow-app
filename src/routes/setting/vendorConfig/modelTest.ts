@@ -32,12 +32,12 @@ export default router.post(
         },
         video: { fnName: "videoRequest", modelData: {} },
       } as const;
-      const vendorConfigData = await u.db("o_vendorConfig").where("id", id).first();
+      const vendorConfigData = await u.db("o_vendorConfig").where("id", id).andWhere("userId", (req as any).user.id).first();
 
       if (!vendorConfigData) return res.status(500).send(error("未找到该供应商配置"));
       if (!vendorConfigData.models) return res.status(500).send(error("未找到模型列表"));
 
-      const modelList = await u.vendor.getModelList(vendorConfigData.id!);
+      const modelList = await u.vendor.getModelList(vendorConfigData.id!, (req as any).user.id);
 
       const selectedModel = modelList.find((i: any) => i.modelName == modelName);
       if (type == "video") {

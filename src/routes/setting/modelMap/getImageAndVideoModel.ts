@@ -4,7 +4,7 @@ import { success } from "@/lib/responseFormat";
 const router = express.Router();
 
 export default router.post("/", async (req, res) => {
-  const dataList = await u.db("o_vendorConfig").select("id").where("enable", 1);
+  const dataList = await u.db("o_vendorConfig").select("id").where("enable", 1).andWhere("userId", (req as any).user.id);
   if (!dataList || dataList.length === 0) {
     return res.status(404).send({ error: "模型未找到" });
   }
@@ -13,7 +13,7 @@ export default router.post("/", async (req, res) => {
       const vendor = u.vendor.getVendor(item.id!);
       const promptList = await u.db("o_modelPrompt").andWhere("vendorId", vendor.id).select("*");
       const promptMap = new Map(promptList.map((p) => [p.model, { fileName: p.fileName, path: p.path }]));
-      const models = await u.vendor.getModelList(item.id!);
+      const models = await u.vendor.getModelList(item.id!, (req as any).user.id);
       const filteredModels = models
         .filter((m: any) => m.type === "video")
         .map((m: any) => ({

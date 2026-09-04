@@ -49,7 +49,7 @@ export default router.post(
         });
 
         const audioList = audioData.map((i) => `- ID:${i.id} | 名称:${i.name} | 描述:${i.describe ?? "无"}`).join("\n");
-        const promptData = await u.db("o_prompt").where("type", "audioBindPrompt").first();
+        const promptData = await u.db("o_prompt").where("type", "audioBindPrompt").andWhere("userId", (req as any).user.id).first();
         let audioBindPrompt = "" as string | undefined;
         if (promptData && promptData.useData) {
           audioBindPrompt = promptData.useData;

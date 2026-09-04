@@ -12,11 +12,11 @@ export default router.post(
   }),
   async (req, res) => {
     const { type } = req.body;
-    const dataList = await u.db("o_vendorConfig").select("id").where("enable", 1);
+    const dataList = await u.db("o_vendorConfig").select("id").where("enable", 1).andWhere("userId", (req as any).user.id);
     if (!dataList || dataList.length === 0) {
       return res.status(404).send({ error: "模型未找到" });
     }
-    const modelList = await Promise.all(dataList.map((i) => u.vendor.getModelList(i.id!)));
+    const modelList = await Promise.all(dataList.map((i) => u.vendor.getModelList(i.id!, (req as any).user.id)));
     const result = await Promise.all(
       dataList.map(async (data, index) => {
         const vendorData = await u.vendor.getVendor(data.id!);

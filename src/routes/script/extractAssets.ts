@@ -203,7 +203,7 @@ export default router.post(
               return "无需回复用户任何内容";
             },
           });
-          const promptData = await u.db("o_prompt").where("type", "scriptAssetExtraction").first();
+          const promptData = await u.db("o_prompt").where("type", "scriptAssetExtraction").andWhere("userId", (req as any).user.id).first();
           let scriptAssetExtraction = "" as string | undefined;
           if (promptData && promptData.useData) {
             scriptAssetExtraction = promptData.useData;

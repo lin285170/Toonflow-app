@@ -52,6 +52,7 @@ export default router.post(
       await u
         .db("o_vendorConfig")
         .where("id", id)
+        .andWhere("userId", (req as any).user.id)
         .update({
           models: JSON.stringify(existingModels),
         });

@@ -20,6 +20,7 @@ export default router.post(
     await u
       .db("o_vendorConfig")
       .where("id", "toonflow")
+      .andWhere("userId", (req as any).user.id)
       .update({
         inputValues: JSON.stringify(inputValue),
       });
@@ -51,6 +52,7 @@ export default router.post(
       await u
         .db("o_vendorConfig")
         .where("id", "toonflow")
+        .andWhere("userId", (req as any).user.id)
         .update({ inputValues: JSON.stringify(inputValue) });
       res.status(400).send(error("KEY无效，请重新输入"));
     }

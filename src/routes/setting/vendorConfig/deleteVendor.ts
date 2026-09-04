@@ -14,7 +14,7 @@ export default router.post(
   async (req, res) => {
     const { id } = req.body;
     await u.db("o_vendorConfig").where("id", id).andWhere("userId", (req as any).user.id).del();
-    await u.db("o_agentDeploy").where("vendorId", id).update({
+    await u.db("o_agentDeploy").where("vendorId", id).andWhere("userId", (req as any).user.id).update({
       model: null,
       vendorId: null,
     });

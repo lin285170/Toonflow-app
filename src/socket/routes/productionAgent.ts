@@ -3,29 +3,31 @@ import u from "@/utils";
 import { Namespace, Socket } from "socket.io";
 import * as agent from "@/agents/productionAgent/index";
 import ResTool from "@/socket/resTool";
+import { userContext } from "@/utils/userContext";
 
-async function verifyToken(rawToken: string): Promise<Boolean> {
+async function verifyToken(rawToken: string): Promise<any | null> {
   const setting = await u.db("o_setting").where("key", "tokenKey").select("value").first();
-  if (!setting) return false;
+  if (!setting) return null;
   const { value: tokenKey } = setting;
-  if (!rawToken) return false;
+  if (!rawToken) return null;
   const token = rawToken.replace("Bearer ", "");
   try {
-    jwt.verify(token, tokenKey as string);
-    return true;
+    return jwt.verify(token, tokenKey as string);
   } catch (err) {
-    return false;
+    return null;
   }
 }
 
 export default (nsp: Namespace) => {
   nsp.on("connection", async (socket: Socket) => {
     const token = socket.handshake.auth.token;
-    if (!token || !(await verifyToken(token))) {
+    const decoded = await verifyToken(token);
+    if (!token || !decoded) {
       console.log("[productionAgent] 连接失败，token无效");
       socket.disconnect();
       return;
     }
+    const userId = (decoded as any).id ?? 1;
     let isolationKey = socket.handshake.auth.isolationKey;
     if (!isolationKey) {
       console.log("[productionAgent] 连接失败，缺少 isolationKey");
@@ -75,7 +77,7 @@ export default (nsp: Namespace) => {
       };
 
       try {
-        await agent.runDecisionAI(ctx);
+        await userContext.run({ userId }, () => agent.runDecisionAI(ctx));
       } catch (err: any) {
         if (err.name !== "AbortError" && !currentController.signal.aborted) {
           console.error("[productionAgent] chat error:", u.error(err).message);

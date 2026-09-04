@@ -63,6 +63,12 @@
     font-size: 14px; background: var(--card); color: var(--text); outline: none;
   }
   .field input:focus { border-color: var(--primary); }
+  .captcha-row { display: flex; gap: 10px; align-items: stretch; }
+  .captcha-row input { flex: 1; }
+  .captcha-img {
+    width: 130px; height: 44px; border: 1px solid var(--border); border-radius: 8px;
+    cursor: pointer; background: #fff; flex-shrink: 0;
+  }
   .btn {
     padding: 10px 22px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;
     background: var(--primary); color: #fff; transition: opacity .15s;
@@ -89,6 +95,7 @@
   .hide { display: none; }
   .toolbar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
   .toolbar input { flex: 1; }
+  .role-note { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
 </style>
 </head>
 <body>
@@ -100,7 +107,7 @@
   <div class="container">
     <div class="tabs">
       <div class="tab active" data-tab="register" onclick="switchTab('register')">注册账号</div>
-      <div class="tab" data-tab="manage" onclick="switchTab('manage')">用户管理</div>
+      <div class="tab" data-tab="manage" onclick="switchTab('manage')">账号管理</div>
     </div>
 
     <!-- 注册 -->
@@ -118,22 +125,25 @@
         <label>确认密码</label>
         <input id="reg-password2" type="password" placeholder="请再次输入密码" autocomplete="new-password">
       </div>
+      <div class="field">
+        <label>验证码</label>
+        <div class="captcha-row">
+          <input id="reg-captcha" placeholder="请输入右侧验证码" autocomplete="off" maxlength="4">
+          <img id="reg-captcha-img" class="captcha-img" alt="验证码" title="点击刷新" onclick="refreshCaptcha()">
+        </div>
+      </div>
       <button class="btn block" onclick="doRegister()">注 册</button>
       <div class="msg" id="reg-msg"></div>
       <div class="tip">注册成功后即可使用新账号登录。新账号拥有独立的项目、供应商配置和 Agent 配置，互不影响。</div>
     </div>
 
-    <!-- 用户管理 -->
+    <!-- 账号管理（管理员：用户管理；普通用户：修改密码） -->
     <div class="card hide" id="panel-manage">
-      <h2>👥 用户管理</h2>
-      <div class="toolbar">
-        <input id="mgr-username" placeholder="新用户名（2-20 字符）">
-        <input id="mgr-password" type="password" placeholder="初始密码（6-20 字符）">
-        <button class="btn sm" onclick="createUser()">新建用户</button>
+      <h2>👥 账号管理</h2>
+      <div id="mgr-body">
+        <div class="empty">加载中...</div>
       </div>
-      <div id="mgr-table"></div>
       <div class="msg" id="mgr-msg"></div>
-      <div class="tip">仅管理员可访问。删除用户会同时删除该用户的项目、供应商配置、Agent 配置等全部数据，不可恢复。</div>
     </div>
   </div>
 
@@ -172,7 +182,7 @@ function switchTab(name) {
   });
   document.getElementById("panel-register").classList.toggle("hide", name !== "register");
   document.getElementById("panel-manage").classList.toggle("hide", name !== "manage");
-  if (name === "manage") loadUsers();
+  if (name === "manage") loadManage();
 }
 
 function backHome(e) {
@@ -187,56 +197,126 @@ function setMsg(id, text, ok) {
   el.className = "msg" + (ok ? " ok" : text ? " err" : "");
 }
 
+/* ============ 注册 + 验证码 ============ */
+var __captchaId = "";
+function refreshCaptcha() {
+  var img = document.getElementById("reg-captcha-img");
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="130" height="44"><rect width="130" height="44" fill="#eee"/><text x="65" y="30" text-anchor="middle" font-size="18" fill="#888">加载中...</text></svg>');
+  fetch(window.__baseUrl + "/user/captcha", { method: "GET" }).then(function (r) { return r.json(); }).then(function (res) {
+    if (res.code === 200 && res.data) {
+      __captchaId = res.data.id;
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(res.data.svg);
+    } else {
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="130" height="44"><rect width="130" height="44" fill="#fdd"/><text x="65" y="30" text-anchor="middle" font-size="14" fill="#c00">加载失败，点击重试</text></svg>');
+    }
+  }).catch(function () {
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="130" height="44"><rect width="130" height="44" fill="#fdd"/><text x="65" y="30" text-anchor="middle" font-size="14" fill="#c00">网络错误，点击重试</text></svg>');
+  });
+}
+
 function doRegister() {
   var u = document.getElementById("reg-username").value.trim();
   var p = document.getElementById("reg-password").value;
   var p2 = document.getElementById("reg-password2").value;
+  var cap = document.getElementById("reg-captcha").value.trim();
   setMsg("reg-msg", "");
   if (u.length < 2 || u.length > 20) return setMsg("reg-msg", "用户名长度为 2-20 个字符");
   if (p.length < 6 || p.length > 20) return setMsg("reg-msg", "密码长度为 6-20 个字符");
   if (p !== p2) return setMsg("reg-msg", "两次输入的密码不一致");
-  window.__api("/user/register", { username: u, password: p }).then(function (res) {
+  if (!cap) return setMsg("reg-msg", "请输入验证码");
+  if (!__captchaId) return setMsg("reg-msg", "验证码未加载，请点击验证码刷新");
+  window.__api("/user/register", { username: u, password: p, captchaId: __captchaId, captchaAnswer: cap }).then(function (res) {
     if (res.code === 200) {
       setMsg("reg-msg", "注册成功！请使用新账号登录。", true);
       document.getElementById("reg-username").value = "";
       document.getElementById("reg-password").value = "";
       document.getElementById("reg-password2").value = "";
+      document.getElementById("reg-captcha").value = "";
+      refreshCaptcha();
     } else {
       setMsg("reg-msg", res.message || "注册失败");
+      refreshCaptcha();
     }
   }).catch(function () { setMsg("reg-msg", "网络错误，请检查服务是否正常"); });
 }
 
-function loadUsers() {
+/* ============ 账号管理（角色区分） ============ */
+function loadManage() {
   setMsg("mgr-msg", "");
-  var tb = document.getElementById("mgr-table");
-  tb.innerHTML = '<div class="empty">加载中...</div>';
+  var body = document.getElementById("mgr-body");
+  body.innerHTML = '<div class="empty">加载中...</div>';
   window.__api("/user/list").then(function (res) {
-    if (res.code !== 200) {
-      tb.innerHTML = '<div class="empty">' + (res.message || "加载失败") + '</div>';
-      if (res.code === 401 || res.code === 403) {
-        setMsg("mgr-msg", "需要管理员权限。请用 admin 账号登录后访问。");
+    if (res.code === 200) {
+      renderAdmin(res.data || []);
+    } else if (res.code === 403) {
+      renderSelf();
+    } else {
+      body.innerHTML = '<div class="empty">' + (res.message || "加载失败") + '</div>';
+      if (res.code === 401) {
+        setMsg("mgr-msg", "请先登录后再访问账号管理。");
       }
-      return;
     }
-    var list = res.data || [];
-    if (!list.length) { tb.innerHTML = '<div class="empty">暂无用户</div>'; return; }
-    var me = localStorage.getItem("userId");
-    var rows = list.map(function (u) {
-      var roleBadge = u.role === "admin"
-        ? '<span class="badge admin">管理员</span>'
-        : '<span class="badge user">普通用户</span>';
-      var ops = '';
-      if (u.role !== "admin") {
-        ops += '<button class="btn danger sm" onclick="resetPwd(' + u.id + ')">重置密码</button>';
-        if (String(u.id) !== String(me)) {
-          ops += '<button class="btn danger sm" onclick="delUser(' + u.id + ',\'' + esc(u.name) + '\')">删除</button>';
-        }
+  }).catch(function () { body.innerHTML = '<div class="empty">网络错误</div>'; });
+}
+
+// 管理员视图：用户列表 + 新建 + 删除 + 重置密码
+function renderAdmin(list) {
+  var body = document.getElementById("mgr-body");
+  var me = localStorage.getItem("userId");
+  var toolbar = '<div class="toolbar">' +
+    '<input id="mgr-username" placeholder="新用户名（2-20 字符）">' +
+    '<input id="mgr-password" type="password" placeholder="初始密码（6-20 字符）">' +
+    '<button class="btn sm" onclick="createUser()">新建用户</button>' +
+    '</div>';
+  var rows = list.map(function (u) {
+    var roleBadge = u.role === "admin"
+      ? '<span class="badge admin">管理员</span>'
+      : '<span class="badge user">普通用户</span>';
+    var ops = '';
+    if (u.role !== "admin") {
+      ops += '<button class="btn danger sm" onclick="resetPwd(' + u.id + ')">重置密码</button>';
+      if (String(u.id) !== String(me)) {
+        ops += '<button class="btn danger sm" onclick="delUser(' + u.id + ',\'' + esc(u.name) + '\')">删除</button>';
       }
-      return '<tr><td>' + esc(u.name) + '</td><td>' + roleBadge + '</td><td>' + fmtTime(u.createTime) + '</td><td><div class="ops">' + ops + '</div></td></tr>';
-    }).join("");
-    tb.innerHTML = '<table><thead><tr><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>';
-  }).catch(function () { tb.innerHTML = '<div class="empty">网络错误</div>'; });
+    }
+    return '<tr><td>' + esc(u.name) + '</td><td>' + roleBadge + '</td><td>' + fmtTime(u.createTime) + '</td><td><div class="ops">' + ops + '</div></td></tr>';
+  }).join("");
+  var table = list.length
+    ? '<table><thead><tr><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>'
+    : '<div class="empty">暂无用户</div>';
+  body.innerHTML = toolbar + table +
+    '<div class="tip">删除用户会同时删除该用户的项目、供应商配置、Agent 配置等全部数据，不可恢复。</div>';
+}
+
+// 普通用户视图：修改自己的密码
+function renderSelf() {
+  var body = document.getElementById("mgr-body");
+  body.innerHTML =
+    '<div class="role-note">当前为普通用户，可在此修改自己的登录密码。</div>' +
+    '<div class="field"><label>当前用户名</label><input id="self-username" readonly></div>' +
+    '<div class="field"><label>新密码（6-20 个字符）</label><input id="self-pwd" type="password" placeholder="请输入新密码"></div>' +
+    '<div class="field"><label>确认新密码</label><input id="self-pwd2" type="password" placeholder="请再次输入新密码"></div>' +
+    '<button class="btn block" onclick="changeSelfPwd()">修改密码</button>';
+  var me = localStorage.getItem("userId");
+  document.getElementById("self-username").value = me ? ("用户 ID: " + me) : "";
+}
+
+function changeSelfPwd() {
+  var p = document.getElementById("self-pwd").value;
+  var p2 = document.getElementById("self-pwd2").value;
+  var me = localStorage.getItem("userId");
+  setMsg("mgr-msg", "");
+  if (p.length < 6 || p.length > 20) return setMsg("mgr-msg", "密码长度为 6-20 个字符");
+  if (p !== p2) return setMsg("mgr-msg", "两次输入的密码不一致");
+  window.__api("/user/resetPassword", { id: Number(me), password: p }).then(function (res) {
+    if (res.code === 200) {
+      setMsg("mgr-msg", "密码修改成功！下次登录请使用新密码。", true);
+      document.getElementById("self-pwd").value = "";
+      document.getElementById("self-pwd2").value = "";
+    } else {
+      setMsg("mgr-msg", res.message || "修改失败");
+    }
+  }).catch(function () { setMsg("mgr-msg", "网络错误"); });
 }
 
 function createUser() {
@@ -250,7 +330,7 @@ function createUser() {
       setMsg("mgr-msg", "用户创建成功", true);
       document.getElementById("mgr-username").value = "";
       document.getElementById("mgr-password").value = "";
-      loadUsers();
+      loadManage();
     } else {
       setMsg("mgr-msg", res.message || "创建失败");
     }
@@ -262,7 +342,7 @@ function resetPwd(id) {
   if (np === null) return;
   if (np.length < 6 || np.length > 20) return alert("密码长度需为 6-20 个字符");
   window.__api("/user/resetPassword", { id: id, password: np }).then(function (res) {
-    if (res.code === 200) { alert("密码已重置"); loadUsers(); }
+    if (res.code === 200) { alert("密码已重置"); loadManage(); }
     else alert(res.message || "重置失败");
   }).catch(function () { alert("网络错误"); });
 }
@@ -270,7 +350,7 @@ function resetPwd(id) {
 function delUser(id, name) {
   if (!confirm("确定删除用户「" + name + "」吗？该用户的项目、供应商配置、Agent 配置等数据将被一并删除，不可恢复！")) return;
   window.__api("/user/delete", { id: id }).then(function (res) {
-    if (res.code === 200) { alert("用户已删除"); loadUsers(); }
+    if (res.code === 200) { alert("用户已删除"); loadManage(); }
     else alert(res.message || "删除失败");
   }).catch(function () { alert("网络错误"); });
 }
@@ -289,8 +369,9 @@ function esc(s) {
   });
 }
 
-// 根据 URL 参数决定初始 tab
+// 初始化：加载验证码 + 根据 URL 参数决定初始 tab
 (function () {
+  refreshCaptcha();
   var m = location.search.match(/mode=([a-z]+)/i);
   if (m && m[1] === "manage") switchTab("manage");
 })();

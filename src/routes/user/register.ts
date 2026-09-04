@@ -2,18 +2,25 @@ import express from "express";
 import u from "@/utils";
 import { success, error } from "@/lib/responseFormat";
 import { validateFields } from "@/middleware/middleware";
+import { verifyCaptcha } from "@/utils/captcha";
 import { z } from "zod";
 const router = express.Router();
 
-// 开放注册（白名单接口，无需登录）
+// 开放注册（白名单接口，无需登录，需验证码防恶意注册）
 export default router.post(
   "/",
   validateFields({
     username: z.string(),
     password: z.string(),
+    captchaId: z.string(),
+    captchaAnswer: z.string(),
   }),
   async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, captchaId, captchaAnswer } = req.body;
+    // 验证码校验（一次性，5 分钟过期）
+    if (!verifyCaptcha(captchaId, captchaAnswer)) {
+      return res.status(400).send(error("验证码错误或已过期"));
+    }
     if (typeof username !== "string" || username.trim().length < 2 || username.trim().length > 20) {
       return res.status(400).send(error("用户名长度为 2-20 个字符"));
     }

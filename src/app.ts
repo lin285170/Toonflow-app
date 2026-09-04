@@ -172,6 +172,8 @@ export default async function startServe(randomPort: Boolean = false) {
     if (req.path === "/api/login/login" || req.path.endsWith("/login/login")) return next();
     // 开放注册接口
     if (req.path === "/api/user/register" || req.path.endsWith("/user/register")) return next();
+    // 注册验证码接口
+    if (req.path === "/api/user/captcha" || req.path.endsWith("/user/captcha")) return next();
 
     if (!token) return res.status(401).send({ message: "未提供token" });
     try {

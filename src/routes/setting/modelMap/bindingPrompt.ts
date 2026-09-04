@@ -15,12 +15,12 @@ export default router.post(
   }),
   async (req, res) => {
     const { vendorId, model, path, fileName } = req.body;
-    const data = await u.db("o_modelPrompt").where("model", model).andWhere("vendorId", vendorId).select("*").first();
+    const data = await u.db("o_modelPrompt").where("model", model).andWhere("vendorId", vendorId).andWhere("userId", (req as any).user.id).select("*").first();
     if (data) {
-      await u.db("o_modelPrompt").where("model", model).andWhere("vendorId", vendorId).update({ fileName, path });
+      await u.db("o_modelPrompt").where("model", model).andWhere("vendorId", vendorId).andWhere("userId", (req as any).user.id).update({ fileName, path });
       res.status(200).send(success("绑定成功"));
     } else {
-      await u.db("o_modelPrompt").insert({ vendorId, model, path, fileName });
+      await u.db("o_modelPrompt").insert({ vendorId, model, path, fileName, userId: (req as any).user.id });
       res.status(200).send(success("绑定成功"));
     }
   },

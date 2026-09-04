@@ -1,7 +1,7 @@
 import express from "express";
 import u from "@/utils";
 import { z } from "zod";
-import { success } from "@/lib/responseFormat";
+import { success, error } from "@/lib/responseFormat";
 import { validateFields } from "@/middleware/middleware";
 const router = express.Router();
 
@@ -13,6 +13,9 @@ export default router.post(
   }),
   async (req, res) => {
     const { id } = req.body;
+    // 校验项目归属（多用户隔离）
+    const proj = await u.db("o_project").where("id", id).andWhere("userId", (req as any).user.id).first();
+    if (!proj) return res.status(400).send(error("项目不存在或无权限"));
     //删除项目
     await u.db("o_project").where("id", id).andWhere("userId", (req as any).user.id).delete();
     await u.db("o_agentWorkData").where("projectId", id).delete();

@@ -2,6 +2,7 @@ import { EventEmitter } from "events";
 import { o_novel } from "@/types/database";
 import u from "@/utils";
 import { stripThink } from "@/utils/stripThink";
+import { getUserId } from "@/utils/userContext";
 export interface EventType {
   id: number;
   event: string;
@@ -27,7 +28,7 @@ class CleanNovel {
   private async processChapter(novel: o_novel): Promise<EventType | null> {
     try {
       const prompt = await u.getPrompts("event");
-      const promptData = await u.db("o_prompt").where("type", "eventExtraction").first();
+      const promptData = await u.db("o_prompt").where("type", "eventExtraction").andWhere("userId", getUserId()).first();
       let eventExtraction = "" as string | undefined;
       if (promptData && promptData.useData) {
         eventExtraction = promptData.useData;

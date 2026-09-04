@@ -101,7 +101,7 @@ export default router.post(
     const videoPrompt = await u.db("o_prompt").where("type", "videoPromptGeneration").andWhere("userId", (req as any).user.id).first();
     let videoPromptGeneration = "" as string | undefined;
 
-    const modelPromptData = await u.db("o_modelPrompt").where("vendorId", id).where("model", modelData).first();
+    const modelPromptData = await u.db("o_modelPrompt").where("vendorId", id).where("model", modelData).andWhere("userId", (req as any).user.id).first();
     //查询到 有绑定对应视频提示词
     if (modelPromptData) {
       const modelPromptRoot = u.getPath(["modelPrompt"]);

@@ -42,7 +42,7 @@ export default async (knex: Knex): Promise<void> => {
     await db("o_user").where("name", "admin").update({ role: "admin", createTime: Date.now() });
   }
   // 业务表加 userId 列，已有数据归 admin(userId=1)
-  for (const table of ["o_vendorConfig", "o_agentDeploy", "o_artStyle", "o_prompt", "o_tasks"]) {
+  for (const table of ["o_vendorConfig", "o_agentDeploy", "o_artStyle", "o_prompt", "o_tasks", "o_modelPrompt"]) {
     await addColumn(table, "userId", "integer");
     await db(table).whereNull("userId").update({ userId: 1 });
   }

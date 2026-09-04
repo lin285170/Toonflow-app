@@ -15,6 +15,7 @@ import jwt from "jsonwebtoken";
 import socketInit from "@/socket/index";
 import { isEletron } from "@/utils/getPath";
 import { ensureThumbnail, ThumbnailSize } from "@/utils/image";
+import { userContext } from "@/utils/userContext";
 
 const app = express();
 const server = http.createServer(app);
@@ -176,7 +177,8 @@ export default async function startServe(randomPort: Boolean = false) {
     try {
       const decoded = jwt.verify(token, tokenKey as string);
       (req as any).user = decoded;
-      next();
+      // 注入请求级用户上下文，供 AI 调用链等深层逻辑读取
+      return userContext.run({ userId: (decoded as any).id }, () => next());
     } catch (err) {
       return res.status(401).send({ message: "无效的token" });
     }

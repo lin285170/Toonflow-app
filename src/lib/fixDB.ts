@@ -46,6 +46,30 @@ export default async (knex: Knex): Promise<void> => {
     await addColumn(table, "userId", "integer");
     await db(table).whereNull("userId").update({ userId: 1 });
   }
+  // o_vendorConfig 主键改为复合主键 (id, userId)，支持多用户各自配置同名供应商
+  try {
+    const vcPragma: any[] = (await knex.raw("PRAGMA table_info(o_vendorConfig)")) as any[];
+    const vcPk = vcPragma.filter((c) => c.pk > 0).map((c) => c.name);
+    const isComposite = vcPk.length === 2 && vcPk.includes("id") && vcPk.includes("userId");
+    if (!isComposite) {
+      console.log("[多用户迁移] 重建 o_vendorConfig 为复合主键 (id, userId)");
+      await knex.raw(`CREATE TABLE o_vendorConfig_new (
+        id TEXT NOT NULL,
+        userId INTEGER NOT NULL DEFAULT 1,
+        inputValues TEXT,
+        models TEXT,
+        enable INTEGER,
+        PRIMARY KEY (id, userId)
+      )`);
+      await knex.raw(`INSERT INTO o_vendorConfig_new (id, userId, inputValues, models, enable)
+        SELECT id, COALESCE(userId, 1), inputValues, models, enable FROM o_vendorConfig`);
+      await knex.raw(`DROP TABLE o_vendorConfig`);
+      await knex.raw(`ALTER TABLE o_vendorConfig_new RENAME TO o_vendorConfig`);
+      console.log("[多用户迁移] o_vendorConfig 重建完成");
+    }
+  } catch (e) {
+    console.error("[多用户迁移] o_vendorConfig 主键迁移失败:", e);
+  }
   // ===== 多用户功能迁移结束 =====
 
   //矫正因软件异常退出导致的状态不一致问题

@@ -558,58 +558,67 @@ export default async (knex: Knex, forceInit: boolean = false): Promise<void> => 
       name: "o_vendorConfig",
       builder: (table) => {
         table.string("id").notNullable();
+        table.integer("userId").notNullable().defaultTo(1); // 所属用户（多用户隔离）
         table.text("inputValues"); // 输入项值 JSON
         table.text("models"); // 模型配置 JSON
         table.integer("enable"); //是否启用供应商
-        table.primary(["id"]);
-        table.unique(["id"]);
+        table.primary(["id", "userId"]);
+        table.unique(["id", "userId"]);
       },
       initData: async (knex) => {
         await knex("o_vendorConfig").insert([
           {
             id: "toonflow",
+            userId: 1,
             inputValues: "{}",
             models: "[]",
             enable: 0,
           },
           {
             id: "deepseek",
+            userId: 1,
             inputValues: "{}",
             models: "[]",
             enable: 0,
           },
           {
             id: "atlascloud",
+            userId: 1,
             inputValues: "{}",
             models: "[]",
             enable: 0,
           },
           {
             id: "volcengine",
+            userId: 1,
             inputValues: "{}",
             models: "[]",
             enable: 0,
           },
           {
             id: "minimax",
+            userId: 1,
             inputValues: "{}",
             models: "[]",
             enable: 0,
           },
           {
             id: "openai",
+            userId: 1,
             inputValues: "{}",
             models: "[]",
             enable: 0,
           },
           {
             id: "klingai",
+            userId: 1,
             inputValues: "{}",
             models: "[]",
             enable: 0,
           },
           {
             id: "vidu",
+            userId: 1,
             inputValues: "{}",
             models: "[]",
             enable: 0,

@@ -3,6 +3,7 @@ import { devToolsMiddleware } from "@ai-sdk/devtools";
 import axios from "axios";
 import { transform } from "sucrase";
 import u from "@/utils";
+import { getUserId } from "@/utils/userContext";
 
 type AiType =
   | "scriptAgent"
@@ -50,25 +51,25 @@ async function resolveModelName(value: AiType | `${string}:${string}`): Promise<
     //正常流程
     //高级配置
     if (agentUseModeVal?.value == "1") {
-      const agentDeployData = await u.db("o_agentDeploy").where("key", value).first();
+      const agentDeployData = await u.db("o_agentDeploy").where("key", value).andWhere("userId", getUserId()).first();
       if (!agentDeployData?.modelName) throw new Error(`高级配置模式下，未找到对应的模型配置 ${value}`);
       return agentDeployData?.modelName as `${number}:${string}`;
     }
     //简易配置
     if (agentUseModeVal?.value == "0") {
       const [mainly] = value!.split(/:(.+)/);
-      const mainlyData = await u.db("o_agentDeploy").where("key", mainly).first();
+      const mainlyData = await u.db("o_agentDeploy").where("key", mainly).andWhere("userId", getUserId()).first();
       if (!mainlyData?.modelName) throw new Error(`简易配置模式下，未找到部署配置 ${value}`);
       return mainlyData?.modelName as `${number}:${string}`;
     }
 
     //未查到agentUseModeVal 维持原判断
-    const agentDeployData = await u.db("o_agentDeploy").where("key", value).first();
+    const agentDeployData = await u.db("o_agentDeploy").where("key", value).andWhere("userId", getUserId()).first();
     let modelName = null;
 
     if (!agentDeployData?.modelName) {
       const [mainly] = agentDeployData!.key!.split(/:(.+)/);
-      const mainlyData = await u.db("o_agentDeploy").where("key", mainly).first();
+      const mainlyData = await u.db("o_agentDeploy").where("key", mainly).andWhere("userId", getUserId()).first();
       if (!mainlyData?.modelName) throw new Error(`未找到部署配置 ${value}`);
       modelName = mainlyData.modelName;
     }
@@ -84,24 +85,24 @@ async function getModelConfig(value: AiType | `${string}:${string}`) {
     //正常流程
     //高级配置
     if (agentUseModeVal?.value == "1") {
-      const agentDeployData = await u.db("o_agentDeploy").where("key", value).first();
+      const agentDeployData = await u.db("o_agentDeploy").where("key", value).andWhere("userId", getUserId()).first();
       if (!agentDeployData?.modelName) throw new Error(`高级配置模式下，未找到对应的模型配置 ${value}`);
       return agentDeployData;
     }
     //简易配置
     if (agentUseModeVal?.value == "0") {
       const [mainly] = value!.split(/:(.+)/);
-      const mainlyData = await u.db("o_agentDeploy").where("key", mainly).first();
+      const mainlyData = await u.db("o_agentDeploy").where("key", mainly).andWhere("userId", getUserId()).first();
       if (!mainlyData?.modelName) throw new Error(`简易配置模式下，未找到部署配置 ${value}`);
       return mainlyData;
     }
 
     //未查到 agentUseModelVal 维持原流程
-    const agentDeployData = await u.db("o_agentDeploy").where("key", value).first();
+    const agentDeployData = await u.db("o_agentDeploy").where("key", value).andWhere("userId", getUserId()).first();
 
     if (!agentDeployData?.modelName) {
       const [mainly] = agentDeployData!.key!.split(/:(.+)/);
-      const mainlyData = await u.db("o_agentDeploy").where("key", mainly).first();
+      const mainlyData = await u.db("o_agentDeploy").where("key", mainly).andWhere("userId", getUserId()).first();
       if (!mainlyData?.modelName) throw new Error(`未找到部署配置 ${value}`);
       return mainlyData;
     }
@@ -117,9 +118,9 @@ async function getVendorTemplateFn(
 async function getVendorTemplateFn(fnName: Exclude<FnName, "textRequest">, modelName: `${string}:${string}`): Promise<(input: any) => any>;
 async function getVendorTemplateFn(fnName: FnName, modelName: `${string}:${string}`): Promise<any> {
   const [id, name] = modelName.split(/:(.+)/);
-  const vendorConfigData = await u.db("o_vendorConfig").where("id", id).first();
+  const vendorConfigData = await u.db("o_vendorConfig").where("id", id).andWhere("userId", getUserId()).first();
   if (!vendorConfigData) throw new Error(`未找到供应商配置 id=${id}`);
-  const modelList = await u.vendor.getModelList(id);
+  const modelList = await u.vendor.getModelList(id, getUserId());
   const selectedModel = modelList.find((i: any) => i.modelName == name);
   if (!selectedModel) throw new Error(`未找到模型 ${name} id=${id}`);
   const code = u.vendor.getCode(id);

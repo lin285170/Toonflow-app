@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>账号管理 - ToonFlow</title>
+<title>注册账号 - ToonFlow</title>
 <style>
   :root {
     --bg: #f5f7fa;
@@ -100,14 +100,14 @@
 </head>
 <body>
   <div class="header">
-    <div class="logo">ToonFlow<span>账号管理</span></div>
+    <div class="logo">ToonFlow<span id="logo-title">注册账号</span></div>
     <a href="/" onclick="backHome(event)">← 返回首页</a>
   </div>
 
   <div class="container">
     <div class="tabs">
-      <div class="tab active" data-tab="register" onclick="switchTab('register')">注册账号</div>
-      <div class="tab" data-tab="manage" onclick="switchTab('manage')">账号管理</div>
+      <div class="tab active" id="tab-register" data-tab="register" onclick="switchTab('register')">注册账号</div>
+      <div class="tab" id="tab-manage" data-tab="manage" onclick="switchTab('manage')">账号管理</div>
     </div>
 
     <!-- 注册 -->
@@ -161,6 +161,10 @@
   }
   function getToken() { return localStorage.getItem("token") || ""; }
   window.__baseUrl = getBaseUrl();
+  // 规范化 baseUrl：去掉尾部斜杠，避免拼接出 //path 协议相对 URL（如 baseUrl=/ 时 / + /user/captcha = //user/captcha）
+  if (window.__baseUrl && window.__baseUrl.charAt(window.__baseUrl.length - 1) === "/") {
+    window.__baseUrl = window.__baseUrl.slice(0, -1);
+  }
   window.__token = getToken();
 
   function api(url, data) {
@@ -373,7 +377,20 @@ function esc(s) {
 (function () {
   refreshCaptcha();
   var m = location.search.match(/mode=([a-z]+)/i);
-  if (m && m[1] === "manage") switchTab("manage");
+  var isManage = m && m[1] === "manage";
+  var lt = document.getElementById("logo-title");
+  var tr = document.getElementById("tab-register");
+  var tm = document.getElementById("tab-manage");
+  if (isManage) {
+    document.title = "账号管理 - ToonFlow";
+    if (lt) lt.textContent = "账号管理";
+    if (tr) tr.style.display = "none";
+  } else {
+    document.title = "注册账号 - ToonFlow";
+    if (lt) lt.textContent = "注册账号";
+    if (tm) tm.style.display = "none";
+  }
+  if (isManage) switchTab("manage");
 })();
 </script>
 </body>

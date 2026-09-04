@@ -150,14 +150,25 @@ export default async function startServe(randomPort: Boolean = false) {
   }
 
   app.use(async (req, res, next) => {
+    // 兼容前端 baseUrl 未带 /api 前缀的情况：自动补全 /api 前缀
+    // （静态资源 /oss /skills /assets 及前端页面 / 已在前面处理，不会走到这里）
+    if (
+      !req.path.startsWith("/api") &&
+      !req.path.startsWith("/oss") &&
+      !req.path.startsWith("/skills") &&
+      !req.path.startsWith("/assets") &&
+      req.path !== "/"
+    ) {
+      req.url = "/api" + req.url;
+    }
     const setting = await u.db("o_setting").where("key", "tokenKey").select("value").first();
     if (!setting) return res.status(444).send({ message: "服务器秘钥未配置，请联系管理员" });
     const { value: tokenKey } = setting;
     // 从 header 或 query 参数获取 token
     const rawToken = req.headers.authorization || (req.query.token as string) || "";
     const token = rawToken.replace("Bearer ", "");
-    // 白名单路径
-    if (req.path === "/api/login/login") return next();
+    // 白名单路径（登录接口，兼容任意 baseUrl 前缀）
+    if (req.path === "/api/login/login" || req.path.endsWith("/login/login")) return next();
 
     if (!token) return res.status(401).send({ message: "未提供token" });
     try {

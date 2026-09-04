@@ -53,7 +53,7 @@ class OSS {
     // URL 始终使用 /，所以这里需要将系统分隔符转回 /
     let url = `/${prefix}/`;
     if (process.env.ossURL && process.env.ossURL !== "") url = process.env.ossURL + `/${prefix}/`;
-    if (process.env.NODE_ENV == "dev") url = `http://localhost:10588/${prefix}/`;
+    // 桌面端（Electron）本地服务需要绝对地址
     if (isEletron()) url = `http://localhost:${process.env.PORT}/${prefix}/`;
     return `${url}${safePath.split(path.sep).join("/")}`;
   }

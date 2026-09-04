@@ -27,9 +27,9 @@ export function validateFields(
 // 管理员权限校验（从数据库实时确认角色，兼容旧 token 无 role 字段的情况）
 export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const user = (req as any).user;
-  if (!user?.id) return res.status(401).send({ message: "未登录" });
+  if (!user?.id) return res.status(401).send({ code: 401, message: "未登录" });
   const dbUser = await u.db("o_user").where("id", user.id).first();
-  if (!dbUser) return res.status(401).send({ message: "用户不存在" });
-  if (dbUser.role !== "admin") return res.status(403).send({ message: "无权限，仅管理员可操作" });
+  if (!dbUser) return res.status(401).send({ code: 401, message: "用户不存在" });
+  if (dbUser.role !== "admin") return res.status(403).send({ code: 403, message: "无权限，仅管理员可操作" });
   next();
 }

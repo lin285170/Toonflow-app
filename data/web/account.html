@@ -270,11 +270,10 @@ function renderAdmin(list) {
       ? '<span class="badge admin">管理员</span>'
       : '<span class="badge user">普通用户</span>';
     var ops = '';
-    if (u.role !== "admin") {
-      ops += '<button class="btn danger sm" onclick="resetPwd(' + u.id + ')">重置密码</button>';
-      if (String(u.id) !== String(me)) {
-        ops += '<button class="btn danger sm" onclick="delUser(' + u.id + ',\'' + esc(u.name) + '\')">删除</button>';
-      }
+    // 所有用户（含 admin）都可重置密码；删除仅限非 admin 且非自己
+    ops += '<button class="btn danger sm" onclick="resetPwd(' + u.id + ')">重置密码</button>';
+    if (u.role !== "admin" && String(u.id) !== String(me)) {
+      ops += '<button class="btn danger sm" onclick="delUser(' + u.id + ',\'' + esc(u.name) + '\')">删除</button>';
     }
     return '<tr><td>' + esc(u.name) + '</td><td>' + roleBadge + '</td><td>' + fmtTime(u.createTime) + '</td><td><div class="ops">' + ops + '</div></td></tr>';
   }).join("");

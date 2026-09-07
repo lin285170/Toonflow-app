@@ -101,7 +101,6 @@
 <body>
   <div class="header">
     <div class="logo">ToonFlow<span id="logo-title">注册账号</span></div>
-    <a href="/" onclick="backHome(event)">← 返回首页</a>
   </div>
 
   <div class="container">
@@ -187,12 +186,6 @@ function switchTab(name) {
   document.getElementById("panel-register").classList.toggle("hide", name !== "register");
   document.getElementById("panel-manage").classList.toggle("hide", name !== "manage");
   if (name === "manage") loadManage();
-}
-
-function backHome(e) {
-  e.preventDefault();
-  var tk = localStorage.getItem("token");
-  window.location.href = tk ? "/project" : "/";
 }
 
 function setMsg(id, text, ok) {

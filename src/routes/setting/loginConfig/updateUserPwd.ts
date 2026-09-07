@@ -14,6 +14,11 @@ export default router.post(
   }),
   async (req, res) => {
     const { name, password, id } = req.body;
+    // 权限校验：仅允许修改自己的账号（防越权改他人密码）
+    const me = (req as any).user?.id;
+    if (!me || Number(me) !== Number(id)) {
+      return res.status(403).send({ code: 403, message: "无权限，仅可修改自己的密码" });
+    }
     await u.db("o_user").where("id", id).update({
       name,
       password,

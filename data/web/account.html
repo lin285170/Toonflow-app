@@ -96,6 +96,7 @@
   .toolbar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
   .toolbar input { flex: 1; }
   .role-note { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+  .reset-box { border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; background: #fafbfc; }
 </style>
 </head>
 <body>
@@ -271,7 +272,7 @@ function renderAdmin(list) {
       : '<span class="badge user">普通用户</span>';
     var ops = '';
     // 所有用户（含 admin）都可重置密码；删除仅限非 admin 且非自己
-    ops += '<button class="btn danger sm" onclick="resetPwd(' + u.id + ')">重置密码</button>';
+    ops += '<button class="btn danger sm" onclick="showResetForm(' + u.id + ',\'' + esc(u.name) + '\')">重置密码</button>';
     if (u.role !== "admin" && String(u.id) !== String(me)) {
       ops += '<button class="btn danger sm" onclick="delUser(' + u.id + ',\'' + esc(u.name) + '\')">删除</button>';
     }
@@ -280,7 +281,7 @@ function renderAdmin(list) {
   var table = list.length
     ? '<table><thead><tr><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table>'
     : '<div class="empty">暂无用户</div>';
-  body.innerHTML = toolbar + table +
+  body.innerHTML = '<div id="reset-box" class="reset-box hide"></div>' + toolbar + table +
     '<div class="tip">删除用户会同时删除该用户的项目、供应商配置、Agent 配置等全部数据，不可恢复。</div>';
 }
 
@@ -294,7 +295,7 @@ function renderSelf() {
     '<div class="field"><label>确认新密码</label><input id="self-pwd2" type="password" placeholder="请再次输入新密码"></div>' +
     '<button class="btn block" onclick="changeSelfPwd()">修改密码</button>';
   var me = localStorage.getItem("userId");
-  document.getElementById("self-username").value = me ? ("用户 ID: " + me) : "";
+  document.getElementById("self-username").value = getUserName() || ("用户 ID: " + me);
 }
 
 function changeSelfPwd() {
@@ -333,14 +334,54 @@ function createUser() {
   }).catch(function () { setMsg("mgr-msg", "网络错误"); });
 }
 
-function resetPwd(id) {
-  var np = prompt("请输入新的密码（6-20 个字符）：");
-  if (np === null) return;
-  if (np.length < 6 || np.length > 20) return alert("密码长度需为 6-20 个字符");
-  window.__api("/user/resetPassword", { id: id, password: np }).then(function (res) {
-    if (res.code === 200) { alert("密码已重置"); loadManage(); }
-    else alert(res.message || "重置失败");
-  }).catch(function () { alert("网络错误"); });
+// 解码 JWT 获取当前用户名
+function getUserName() {
+  var tk = localStorage.getItem("token") || "";
+  tk = tk.replace(/^Bearer\s+/i, "");
+  try {
+    var parts = tk.split(".");
+    if (parts.length === 3) {
+      var payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+      return payload.name || "";
+    }
+  } catch (e) {}
+  return "";
+}
+
+// 管理员重置密码：表单式（不使用弹窗）
+var __resetTarget = null;
+function showResetForm(id, name) {
+  __resetTarget = id;
+  var box = document.getElementById("reset-box");
+  box.innerHTML =
+    '<div class="role-note">重置密码：<b>' + name + '</b></div>' +
+    '<div class="field"><label>新密码（6-20 个字符）</label><input id="rp-pwd" type="password" placeholder="请输入新密码"></div>' +
+    '<div class="field"><label>确认新密码</label><input id="rp-pwd2" type="password" placeholder="请再次输入新密码"></div>' +
+    '<button class="btn sm" onclick="submitReset()">确认重置</button> ' +
+    '<button class="btn sm" onclick="cancelReset()">取消</button>' +
+    '<div class="msg" id="rp-msg"></div>';
+  box.classList.remove("hide");
+  box.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+function submitReset() {
+  var p = document.getElementById("rp-pwd").value;
+  var p2 = document.getElementById("rp-pwd2").value;
+  setMsg("rp-msg", "");
+  if (p.length < 6 || p.length > 20) return setMsg("rp-msg", "密码长度为 6-20 个字符");
+  if (p !== p2) return setMsg("rp-msg", "两次输入的密码不一致");
+  window.__api("/user/resetPassword", { id: __resetTarget, password: p }).then(function (res) {
+    if (res.code === 200) {
+      setMsg("rp-msg", "密码已重置", true);
+      setTimeout(function () { cancelReset(); loadManage(); }, 800);
+    } else {
+      setMsg("rp-msg", res.message || "重置失败");
+    }
+  }).catch(function () { setMsg("rp-msg", "网络错误"); });
+}
+function cancelReset() {
+  var box = document.getElementById("reset-box");
+  if (box) box.classList.add("hide");
+  __resetTarget = null;
 }
 
 function delUser(id, name) {

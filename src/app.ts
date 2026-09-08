@@ -145,7 +145,17 @@ export default async function startServe(randomPort: Boolean = false) {
   const webDir = u.getPath("web");
   if (fs.existsSync(webDir)) {
     console.log("静态网站目录:", webDir);
-    app.use(express.static(webDir, { acceptRanges: false }));
+    app.use(
+      express.static(webDir, {
+        acceptRanges: false,
+        setHeaders: (res, filePath) => {
+          // HTML 入口文件不缓存，确保前端更新后浏览器刷新即可拿到最新版（避免 SPA 用旧 JS）
+          if (filePath.endsWith(".html")) {
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          }
+        },
+      }),
+    );
   } else {
     console.warn("静态网站目录不存在:", webDir);
   }

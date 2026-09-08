@@ -9,8 +9,11 @@ export default (io: Server) => {
   };
 
   for (const [name, handler] of Object.entries(routes)) {
-    const nsp = io.of(`/api/socket/${name}`);
-    handler(nsp);
-    console.log(`[Socket] 注册命名空间: /api/socket/${name}`);
+    // 同时注册带 /api 前缀和不带前缀的命名空间，兼容前端 baseUrl=/ 或 /api 两种配置
+    for (const prefix of ["/api/socket", "/socket"]) {
+      const nsp = io.of(`${prefix}/${name}`);
+      handler(nsp);
+      console.log(`[Socket] 注册命名空间: ${prefix}/${name}`);
+    }
   }
 };

@@ -254,9 +254,16 @@ const imageRequest = async (config: ImageConfig, model: ImageModel): Promise<str
   if (workflow["60"] && workflow["60"].inputs) {
     workflow["60"].inputs.resolution = mapSize(config.size);
   }
-  // 随机种子（节点 51 easy seed）
+  // 随机种子（节点 51 easy seed + 直接设置 KSampler 30:3 的 seed）
+  // 说明：easy seed 自定义节点的输出不参与 ComfyUI 缓存哈希传播，
+  // 若只改 51 会导致 30:3 KSampler 被判定为"输入未变"而命中缓存、不重新生成。
+  // 直接给 30:3 赋随机 seed 可强制其重新执行。
+  const seed = Math.floor(Math.random() * 2 ** 53);
   if (workflow["51"] && workflow["51"].inputs) {
-    workflow["51"].inputs.seed = Math.floor(Math.random() * 2 ** 53);
+    workflow["51"].inputs.seed = seed;
+  }
+  if (workflow["30:3"] && workflow["30:3"].inputs) {
+    workflow["30:3"].inputs.seed = seed;
   }
 
   logger("开始提交 ComfyUI 图像生成任务");
